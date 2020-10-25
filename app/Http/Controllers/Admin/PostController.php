@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Post;
 use App\Tag;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class PostController extends Controller {
@@ -19,7 +21,7 @@ class PostController extends Controller {
 
         /* poichè sono nella sezione admin devo mostrare solo i post dell'utente corrente */
         $id = Auth::id();
-        $posts = Post::where('user_id', $id)->orderBy('created_at', 'desc')->get();
+        $posts = Post::where('user_id', $id)->orderBy('created_at', 'desc')->paginate(5);
         return view('admin.posts.index', compact('posts'));
 
     }
@@ -41,33 +43,25 @@ class PostController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request) {
-
-        /* aggiungo id da Auth */
         $data = request()->all();
+        $this->postValidation('unique:posts|');
 
-        $tags = $data['tags'];
-
-        $this->postValidation();
-
-        /* inserisco id nell'array */
         $data['user_id'] = Auth::id();
-        /* inserisco slug nell'array */
-
         $data['slug'] = (Str::slug($data['title']));
+        $data['created_at'] = Carbon::now('Europe/Rome');
 
-        /* $result = Post::create($data); */
-        /* $result->tags()->attach($data['tags']); */
-
-        /* crea oggetto di classe Post */
+        if (!empty($data['img'])) {
+            $data['img'] = Storage::disk('public')->put('images', $data['img']);
+        }
         $newPost = new Post;
-
-        /* lo filla */
         $newPost->fill($data);
-
-        /* lo salva */
         $result = $newPost->save();
 
-        $newPost->tags()->attach($tags);
+        /* $result = Post::create($data); */
+
+        if (!empty($data['tags'])) {
+            $newPost->tags()->attach($data['tags']);
+        }
 
         if ($result) {
             return redirect(route('posts.index'));
@@ -93,7 +87,9 @@ class PostController extends Controller {
      */
     public function edit(Post $post) {
 
-        return view('admin.posts.edit', compact('post'));
+        $tags = Tag::all();
+        return view('admin.posts.edit', compact('post', 'tags'));
+
     }
 
     /**
@@ -106,14 +102,29 @@ class PostController extends Controller {
     public function update(Request $request, Post $post) {
 
         $data = request()->all();
-
-        $this->postValidation();
+        $this->postValidation('');
 
         $data['slug'] = Str::slug($data['title']);
+        $data['updated_at'] = Carbon::now('Europe/Rome');
 
-        $post->update($data);
+        if (!empty($data['tags'])) {
+            $post->tags()->sync($data['tags']);
+        } else {
+            $post->tags()->detach();
+        }
 
-        return redirect(route('posts.index'))->with('status', ['success', "{$post->user->name} - Post modificato correttamente"]);
+        if (!empty($data['img'])) {
+            if (!empty($post->img)) {
+                Storage::disk('public')->delete($post->img);
+            }
+            $data['img'] = Storage::disk('public')->put('images', $data['img']);
+        }
+
+        $result = $post->update($data);
+
+        if ($result) {
+            return redirect(route('posts.index'))->with('status', ['success', "{$post->user->name} hai modificato correttamente il post"]);
+        }
 
     }
 
@@ -124,18 +135,16 @@ class PostController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function destroy(Post $post) {
-
         $post->delete();
-
-        return redirect(route('posts.index'))->with('status', ['danger', "{$post->user->name} - Post cancellato correttamente"]);
-
+        return redirect(route('posts.index'))->with('status', ['danger', "{$post->user->name} hai cancellato correttamente il post"]);
     }
 
-    private function postValidation() {
-
+    /* funzione validazione */
+    private function postValidation($flag) {
         request()->validate([
-            'title' => 'required|min:5|max:100',
+            'title' => $flag . 'required|min:5|max:100',
             'body' => 'required|min:5|max:500',
+            'img' => 'image',
         ]);
     }
 

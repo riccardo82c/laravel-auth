@@ -15,16 +15,24 @@ use Illuminate\Support\Facades\Route;
 |
  */
 
-Route::get('/', function () {
-    return view('guests.home');
-});
-
 Auth::routes();
 
-Route::prefix('admin')->namespace('Admin')->middleware('auth')->group(function () {
-    Route::get('home', 'HomeController@index')->name('home');
-    Route::resource('posts', 'PostController');
-});
+Route::prefix('admin')
+    ->namespace('Admin')
+    ->middleware('auth')
+    ->group(function () {
+        Route::get('home', 'HomeController@index')->name('home');
+        Route::resource('posts', 'PostController');
+    });
+
+/* guest */
+/* Route::get('/', function () {
+return view('guests.home');
+})->name('guestHome'); */
+Route::view('/', 'guests.home')->name('guestHome');
+
+Route::get('posts', 'PostController@index')->name('guest.posts.home');
+Route::get('posts/show/{slug}', 'PostController@show')->name('guest.posts.show');
 
 /* oppure */
 /* Route::get('admin/home', 'Admin\HomeController@index')->name('home'); */

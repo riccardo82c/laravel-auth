@@ -6,3 +6,25 @@
 
 // Bootstrap
 @import '~bootstrap/scss/bootstrap';
+
+
+.jumbotron {
+    background-image: url('https://images.unsplash.com/photo-1533628635777-112b2239b1c7?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1350&q=80');
+    background-position: center;
+    background-size: cover;
+
+
+
+    h1 {
+        color: black;
+    }
+
+    hr {
+        color: black;
+    }
+
+    a {
+        padding: 15px 30px;
+        font-size: 1.5em;
+    }
+}

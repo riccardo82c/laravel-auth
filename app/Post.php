@@ -10,7 +10,7 @@ class Post extends Model {
 
     /* public $guarded = []; */
 
-    public $fillable = ['id', 'title', 'body', 'slug', 'created_at', 'updated_at', 'user_id'];
+    public $fillable = ['id', 'title', 'img', 'body', 'slug', 'created_at', 'updated_at', 'user_id'];
 
     public function user() {
         return $this->belongsTo('App\User');
